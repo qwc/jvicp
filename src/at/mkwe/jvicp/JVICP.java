@@ -216,8 +216,16 @@ public class JVICP {
   public void sendDataToDevice(String message, boolean eoiTermination, boolean deviceClear, boolean serialPoll) throws IOException {
     VICPHeader header = new VICPHeader();
     header.setOperation(OPERATION_DATA);
-    if (eoiTermination)
+    if (eoiTermination) {
       header.setOperation(OPERATION_EOI);
+      if (!message.endsWith("\n")) {
+        // see: WaveAce 1000/2000 Remote Control Operator's Manual
+        // -> Terminator/Delimiter
+        // TODO: Prove general validity, because this could be Teledyne Lecroy
+        // specific!
+        message = message + "\n";
+      }
+    }
     if (deviceClear)
       header.setOperation(OPERATION_CLEAR);
     if (serialPoll)
