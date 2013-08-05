@@ -96,6 +96,8 @@ public class JVICP {
   public static final int VICP_PORT = 1861; // port # registered with IANA for
                                             // lecroy-vicp
 
+  private boolean timeoutDisabled;
+
   public static class VICPHeader {
     byte operation;
     byte headerVersion;
@@ -195,6 +197,7 @@ public class JVICP {
   private void init() {
     lastSequenceNumber = 1;
     nextSequenceNumber = 1;
+    timeoutDisabled = false;
   }
 
   public void disconnect() {
@@ -253,28 +256,33 @@ public class JVICP {
 
   public VICPData readDataFromDevice() throws IOException {
     VICPHeader header = readHeaderFromDevice();
-    VICPData data = new VICPData();
-    data.bytes = new byte[header.numOfBytes];
-    in.readFully(data.bytes);
-    return data;
+    if (header != null) {
+      VICPData data = new VICPData();
+      data.bytes = new byte[header.numOfBytes];
+      in.readFully(data.bytes);
+      return data;
+    }
+    return null;
   }
 
   public VICPHeader readHeaderFromDevice() throws IOException {
     VICPHeader header = new VICPHeader();
-    int cnt = 0, timeout = 5000;
-    while (in.available() < 8 && cnt < timeout) {
-      try {
-        Thread.sleep(1);
-      } catch (InterruptedException e) {
+    if (!isTimeoutDisabled()) {
+      int cnt = 0, timeout = 5000;
+      while (in.available() < 8 && cnt < timeout) {
+        try {
+          Thread.sleep(1);
+        } catch (InterruptedException e) {
+        }
+        ++cnt;
       }
-      ++cnt;
-    }
-    // error, no sign of a header
-    if (cnt == timeout) {
-      System.out.println("Reached timeout!");
-      this.disconnect();
-      this.connect(host);
-      return null;
+      // error, no sign of a header
+      if (cnt == timeout) {
+        System.out.println("Reached timeout!");
+        this.disconnect();
+        this.connect(host);
+        return null;
+      }
     }
     header.operation = in.readByte();
     header.headerVersion = in.readByte();
@@ -308,6 +316,14 @@ public class JVICP {
 
   public void setHost(String host) {
     this.host = host;
+  }
+
+  public boolean isTimeoutDisabled() {
+    return timeoutDisabled;
+  }
+
+  public void setTimeoutDisabled(boolean disableTimeout) {
+    this.timeoutDisabled = disableTimeout;
   }
 
 }
