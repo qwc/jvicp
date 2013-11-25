@@ -198,6 +198,7 @@ public class JVICP {
     lastSequenceNumber = 1;
     nextSequenceNumber = 1;
     timeoutDisabled = false;
+
   }
 
   public void disconnect() {
@@ -206,6 +207,10 @@ public class JVICP {
     } catch (IOException e) {
       // ignore!
     }
+  }
+
+  public boolean isConnected() {
+    return vicp_socket.isConnected();
   }
 
   public void sendDataToDevice(String message, boolean eoiTermination) throws IOException {
